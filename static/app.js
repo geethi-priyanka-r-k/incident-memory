@@ -61,6 +61,15 @@ function addCitationButtons(container, sources) {
   container.append(citations);
 }
 
+function normalizeMemoryLookupError(problem) {
+  const message = (problem && (problem.message || problem.error)) || "";
+  if (!message) return "Memory lookup failed. This is usually temporary.";
+  if (message.toLowerCase().includes("related memories could not be loaded")) {
+    return "Memory lookup failed. This is usually temporary.";
+  }
+  return message;
+}
+
 function updateSuccessRecord(summary) {
   renderSuccessRecord("success-record", summary);
 }
@@ -536,7 +545,7 @@ async function runTriage() {
     spinner.hidden = true;
   } catch (problem) {
     spinner.hidden = true;
-    error.textContent = problem.message;
+    error.textContent = normalizeMemoryLookupError(problem);
     error.hidden = false;
     retry.hidden = false;
   }

@@ -4,10 +4,10 @@
 <p class="back-link"><a href="{{ url_for('dashboard') }}">All incidents</a></p>
 <header class="page-header incident-page-header">
   <div>
-    <h1>{{ incident.title }}</h1>
+    <h1 class="incident-title">{{ incident.title }}</h1>
     <p class="page-description">Review the report, see related memories, and record a resolution for the next incident.</p>
     {% if incident.is_demo %}<p class="demo-data-note">Local demo sample. Any confidence or memory shown here is illustrative, not model output or a Hindsight recall.</p>{% endif %}
-    <p class="incident-meta-line">{{ incident.type }} · <span class="badge {% if incident.severity == 'P1' %}badge-danger{% endif %}">{{ incident.severity }}</span>{% if incident.report_count > 1 %} · x{{ incident.report_count }} reports{% endif %}</p>
+    <p class="incident-meta-line">{{ incident.type }} · <span class="badge {% if incident.severity == 'P1' %}badge-danger{% endif %}">{{ incident.severity }}</span>{% if incident.report_count > 1 %} · <span class="badge report-badge">Reported {{ incident.report_count }} times</span>{% endif %}</p>
   </div>
   <form id="status-form" class="status-control">
     <label for="incident-status">Status</label>
@@ -38,10 +38,39 @@
 
     <section class="card">
       <h2>Timeline</h2>
+      {% set repeated_report_events = namespace(items=[]) %}
+      {% for event in events %}
+        {% if event.event.startswith("reported again by ") %}
+          {% set repeated_report_events.items = repeated_report_events.items + [event] %}
+        {% endif %}
+      {% endfor %}
       <ol class="timeline">
         <li><span class="timeline-dot"></span><div><strong>Incident reported</strong><time datetime="{{ incident.created_at }}">{{ incident.created_at[:16]|replace("T", " ") }}</time></div></li>
+        {% if repeated_report_events.items %}
+        <li class="timeline-summary">
+          <span class="timeline-dot"></span>
+          <div>
+            <div class="timeline-summary-main">
+              <strong>Reported again {{ repeated_report_events.items|length }} times (latest {{ repeated_report_events.items[-1].created_at[11:16] }})</strong>
+              <details class="timeline-detail">
+                <summary>show all</summary>
+                <div class="repeat-report-list">
+                  {% for event in repeated_report_events.items %}
+                  <div class="repeat-report-entry">
+                    <span>{{ event.event }}</span>
+                    <time datetime="{{ event.created_at }}">{{ event.created_at[:16]|replace("T", " ") }}</time>
+                  </div>
+                  {% endfor %}
+                </div>
+              </details>
+            </div>
+          </div>
+        </li>
+        {% endif %}
         {% for event in events %}
-        <li><span class="timeline-dot"></span><div><strong>{{ event.event }}</strong><time datetime="{{ event.created_at }}">{{ event.created_at[:16]|replace("T", " ") }}</time></div></li>
+          {% if not event.event.startswith("reported again by ") %}
+          <li><span class="timeline-dot"></span><div><strong>{{ event.event }}</strong><time datetime="{{ event.created_at }}">{{ event.created_at[:16]|replace("T", " ") }}</time></div></li>
+          {% endif %}
         {% endfor %}
         {% if incident.status == "investigating" %}
         <li><span class="timeline-dot"></span><div><strong>Investigation started</strong><span>Current status</span></div></li>
@@ -63,7 +92,7 @@
         <label for="not-worked">What did not work?</label>
         <textarea id="not-worked" name="not_worked" rows="2">{{ incident.not_worked or "" }}</textarea>
         <div class="form-actions">
-          <span class="sync-state" id="memory-state" role="status">Memory sync: {{ incident.memory_sync }}</span>
+          <span class="sync-state" id="memory-state" role="status"><span class="sync-state-label">Memory sync</span><span class="sync-badge sync-{{ incident.memory_sync or 'none' }}">{{ (incident.memory_sync or 'none')|capitalize }}</span></span>
           <button class="button primary" id="resolve-submit" type="submit">Save resolution</button>
         </div>
         <p class="form-error" id="resolve-error" role="alert" hidden></p>
@@ -93,8 +122,10 @@
         <span class="spinner" aria-hidden="true"></span>
         <span id="triage-spinner-text">Reviewing related incidents…</span>
       </div>
-      <p class="form-error" id="triage-error" role="alert" hidden></p>
-      <button class="button secondary" id="retry-triage" type="button" hidden>Retry triage</button>
+      <div class="triage-state-row">
+        <p class="form-error memory-warning" id="triage-error" role="alert" hidden>Memory lookup failed. This is usually temporary.</p>
+        <button class="button primary teal" id="retry-triage" type="button" hidden>Retry triage</button>
+      </div>
       <div id="briefing-content" {% if not briefing %}hidden{% endif %}>
         <div class="briefing-section">
           <h3>Likely match</h3>

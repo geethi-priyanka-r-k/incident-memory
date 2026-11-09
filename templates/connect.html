@@ -41,6 +41,29 @@
   {% endif %}
 </section>
 
+{# NEW SECTION: Recent from Band. Hidden until the /connect route passes band_incidents. #}
+{% if band_incidents is defined %}
+<section class="card content-card">
+  <div class="section-heading">
+    <h2>Recent from Band</h2>
+    <span class="badge badge-resolved">{{ band_incidents|length }} shown</span>
+  </div>
+  <p class="section-description">Incidents reported in a Band room. They are saved in the same database and memory as the rest of the app.</p>
+  {% if band_incidents %}
+  <ul class="configuration-list">
+    {% for item in band_incidents %}
+    <li>
+      <a href="/incident/{{ item.id }}">#{{ item.id }} {{ item.title[:70] }}</a>
+      <span>{{ item.status }}</span>
+    </li>
+    {% endfor %}
+  </ul>
+  {% else %}
+  <p class="muted">No incidents from Band yet. Send one in the room.</p>
+  {% endif %}
+</section>
+{% endif %}
+
 <section class="card content-card">
   <h2>Room commands</h2>
   <p>Mention the agent using the room’s @ dropdown, then describe the incident:</p>
