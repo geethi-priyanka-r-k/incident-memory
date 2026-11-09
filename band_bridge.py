@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import json
 import logging
 import os
 import re
@@ -94,11 +95,24 @@ def format_briefing(
     recurrence_alert: str,
     report_count: int = 1,
 ) -> str:
-    answer = str(diagnosis.get("answer") or "").strip()
+    raw = str(diagnosis.get("answer") or "").strip()
+    try:
+        data = json.loads(raw)
+        steps = "\n".join(f"{i}. {s}" for i, s in enumerate(data.get("fix_steps", []), 1))
+        skip = "; ".join(data.get("skip_these", []))
+        answer = (
+            f"Likely match: {data.get('likely_match', '')} "
+            f"({data.get('match_confidence', '?')}% confidence)\n"
+            f"Root cause: {data.get('root_cause', '')}\n"
+            f"Fix steps:\n{steps}\n"
+            f"Don't try: {skip}"
+        )
+    except (ValueError, AttributeError, TypeError):
+        answer = raw
     if not answer:
         answer = "The incident was saved, but the diagnosis did not include a briefing."
-    if len(answer) > 900:
-        answer = answer[:897].rsplit(" ", 1)[0] + "..."
+    if len(answer) > 1500:
+        answer = answer[:1497].rsplit(" ", 1)[0] + "..."
 
     memories = diagnosis.get("memories") or []
     confidence = (
@@ -135,7 +149,20 @@ def recurrence_alert(exact_match_id: int | None) -> str:
         f"{ordinal.capitalize()} {pattern['type'].lower()} incident in 30 days. "
         "Consider a permanent fix. See /patterns."
     )
+class MentionTools:
+    """Wraps tools so every reply mentions the sender."""
 
+    def __init__(self, tools, sender_id):
+        self._tools = tools
+        self._sender_id = sender_id
+
+    def __getattr__(self, name):
+        return getattr(self._tools, name)
+
+    async def send_message(self, content, mentions=None):
+        return await self._tools.send_message(
+            content, mentions=mentions or [self._sender_id]
+        )
 
 class IncidentAdapter(SimpleAdapter[Any]):
     def __init__(self, incident_agent: Any) -> None:
@@ -155,11 +182,12 @@ class IncidentAdapter(SimpleAdapter[Any]):
     ) -> None:
         try:
             if msg.sender_id == tools.agent_id:
-                return
+                return 
+            tools = MentionTools(tools, msg.sender_id)
 
             message = strip_leading_mentions(msg.content).strip()
             if os.environ.get("BAND_ECHO") == "1":
-                await tools.send_message(f"Echo: {message}")
+                await tools.send_message(f"Echo: {message}", mentions=[msg.sender_id])
                 return
             if len(message) > MAX_MESSAGE_LENGTH:
                 await tools.send_message(

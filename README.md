@@ -112,7 +112,7 @@ Sign in and use the existing seeded incident history; no seed records need to be
 3. **Memory replay:** open `/replay`, choose a resolved incident, and run the replay. Expect three checkpoint columns. The model-estimated scores and fix steps may differ depending on which resolved records Hindsight recalls.
 4. **Change risk:** open `/risk` and check a specific change related to a seeded report, such as a login rate-limit change. Review the linked source incidents. If no source record can be linked, the result must say **No history for this kind of change, risk unknown**.
 
-## Band integration
+## Band integration: working (replies in the room with a briefing)
 
 The Band bridge connects outward from this computer; no public URL or webhook is needed. It saves reports and resolutions through the shared `db.py` SQLite functions. In the Band room, select the agent from the `@` dropdown and describe the incident. To resolve one, mention the agent and use this format:
 
