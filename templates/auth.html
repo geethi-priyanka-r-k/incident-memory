@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#08302F">
+  <title>{% if mode == "signup" %}Create account{% else %}Sign in{% endif %} · Incident Memory</title>
+  <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='favicon.svg') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <script src="{{ url_for('static', filename='app.js') }}" defer></script>
+</head>
+<body class="auth-page">
+  <main class="auth-layout">
+    <section class="auth-story" aria-label="About Incident Memory">
+      <a class="auth-brand" href="{{ url_for('home') }}">
+        <img src="{{ url_for('static', filename='logo-dark.svg') }}" alt="Incident Memory">
+      </a>
+      <div class="auth-story-copy">
+        <p class="auth-eyebrow">Incident response, with context</p>
+        <h1>{% if mode == "signup" %}Give every fix a place to live.{% else %}The next incident shouldn't start from memory alone.{% endif %}</h1>
+        <p class="auth-promise">Bring reports, past fixes, and failed attempts together so your team can act with useful context.</p>
+        <article class="auth-memory-sample">
+          <span class="auth-memory-label">Recalled memory · sample</span>
+          <blockquote>“The session expired during failover. Extending the session TTL and enabling sticky sessions restored stable logins.”</blockquote>
+          <span class="auth-memory-meta">Previous resolution · Web service</span>
+        </article>
+      </div>
+      <p class="auth-story-footer">Report clearly. Recall experience. Keep what worked.</p>
+    </section>
+
+    <section class="auth-form-side" aria-labelledby="auth-title">
+      <div class="auth-form-card">
+        <a class="auth-mobile-brand" href="{{ url_for('home') }}">
+          <img src="{{ url_for('static', filename='logo.svg') }}" alt="Incident Memory">
+        </a>
+        <p class="auth-form-eyebrow">{% if mode == "signup" %}Get started{% else %}Welcome back{% endif %}</p>
+        <h2 id="auth-title">{% if mode == "signup" %}Create your account{% else %}Sign in{% endif %}</h2>
+        {% if error %}<p class="auth-error" role="alert">{{ error }}</p>{% endif %}
+        <form class="auth-form" method="post" action="{{ url_for('signup' if mode == 'signup' else 'login') }}">
+          {% if mode == "signup" %}
+          <label for="name">Name</label>
+          <input id="name" name="name" type="text" maxlength="120" required autocomplete="name" value="{{ name|default('') }}">
+          {% endif %}
+          <label for="email">Email</label>
+          <input id="email" name="email" type="email" maxlength="254" required autocomplete="email" value="{{ email|default('') }}">
+          <label for="password">Password</label>
+          <div class="auth-password-field">
+            <input id="password" name="password" type="password" {% if mode == "signup" %}minlength="8"{% endif %} required autocomplete="{% if mode == 'signup' %}new-password{% else %}current-password{% endif %}">
+            {% if mode == "signup" %}<button class="password-toggle" type="button" data-password-toggle="password" aria-label="Show password" aria-pressed="false">Show</button>{% endif %}
+          </div>
+          {% if mode == "signup" %}
+          <label for="confirm-password">Confirm password</label>
+          <div class="auth-password-field">
+            <input id="confirm-password" name="confirm_password" type="password" minlength="8" required autocomplete="new-password">
+            <button class="password-toggle" type="button" data-password-toggle="confirm-password" aria-label="Show confirmation password" aria-pressed="false">Show</button>
+          </div>
+          {% endif %}
+          <button class="button primary auth-submit" type="submit">{% if mode == "signup" %}Create account{% else %}Sign in{% endif %}</button>
+        </form>
+        {% if mode == "signup" %}
+        <p class="auth-switch">Already have an account? <a href="{{ url_for('login') }}">Sign in</a></p>
+        {% else %}
+        <p class="auth-forgot">Forgot password? Ask your admin</p>
+        <p class="auth-switch">New here? <a href="{{ url_for('signup') }}">Create an account</a></p>
+        {% endif %}
+      </div>
+    </section>
+  </main>
+</body>
+</html>

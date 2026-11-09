@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}Outcome learning{% endblock %}
+{% block content %}
+<header class="page-header">
+  <div>
+    <h1>Outcome learning</h1>
+    <p class="page-description">After a suggested fix is tried, record whether it worked so the agent learns which fixes to trust.</p>
+  </div>
+</header>
+<section class="card content-card">
+  {% if outcomes %}
+  <div class="table-wrap">
+    <table class="data-table">
+      <thead><tr><th>Incident</th><th>Outcome</th><th>Note</th><th>Recorded</th><th>Memory</th></tr></thead>
+      <tbody>
+      {% for outcome in outcomes %}
+        <tr>
+          <td><div class="table-title-cell"><a href="{{ url_for('incident_page', incident_id=outcome.incident_id) }}">#{{ outcome.incident_id }} · {{ outcome.title }}</a><span class="table-category">{{ outcome.type }}</span></div></td>
+          <td>{{ {"worked":"Worked","partly":"Partly","didnt_work":"Didn't work"}[outcome.result] }}</td>
+          <td>{{ outcome.note or "No note" }}</td>
+          <td>{{ outcome.created_at[:16]|replace("T", " ") }}</td>
+          <td>{{ outcome.memory_sync|capitalize }}</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="empty-state">
+    <p>No fix outcomes have been recorded yet. Open an incident with a briefing and record whether its suggested fix worked.</p>
+    <a class="button primary" href="{{ url_for('dashboard') }}">View incidents</a>
+  </div>
+  {% endif %}
+</section>
+{% endblock %}

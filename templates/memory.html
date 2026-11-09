@@ -1,0 +1,121 @@
+{% extends "base.html" %}
+{% block title %}Learning progress{% endblock %}
+{% block content %}
+<header class="page-header">
+  <div>
+    <h1>Learning progress</h1>
+    <p class="page-description">See how often past incidents helped during triage and which fixes have been retained.</p>
+  </div>
+</header>
+
+<section class="counter-grid memory-counters" aria-label="Memory summary">
+  <article class="card counter"><span>Incidents resolved</span><strong data-count-target="{{ learning.resolved }}">0</strong></article>
+  <article class="card counter memory-counter"><span>Memories retained</span><strong data-count-target="{{ learning.retained }}">0</strong></article>
+  <article class="card counter">
+    <span>Triages with a relevant past incident</span>
+    <strong data-count-target="{{ learning.match_share }}" data-count-suffix="%">0</strong>
+    <small>{{ learning.matched_triages }} of {{ learning.total_triages }} triages</small>
+  </article>
+</section>
+
+<section class="card content-card learning-detail-card">
+  <div class="section-heading">
+    <div><h2>Learning curve</h2><p class="section-description">Match confidence for each with-memory triage, oldest first.</p></div>
+    <span class="confidence-caption">Model-estimated, based on recalled memories</span>
+  </div>
+  {% if learning.sample_triages %}
+  <p class="demo-data-note">{{ learning.sample_triages }} local demo triage samples are included for illustration. Their confidence values are synthetic, are not model output, and were not sent to Hindsight.</p>
+  {% endif %}
+  {% if chart_points %}
+  <div class="chart-scroll learning-line-scroll">
+    <svg class="learning-line-chart" viewBox="0 0 {{ chart_width }} 270" width="{{ chart_width }}" height="270" role="img" aria-label="Model-estimated match confidence over time">
+      <line x1="30" y1="40" x2="{{ chart_width - 24 }}" y2="40"/>
+      <line x1="30" y1="125" x2="{{ chart_width - 24 }}" y2="125"/>
+      <line x1="30" y1="210" x2="{{ chart_width - 24 }}" y2="210"/>
+      <text x="0" y="44">100%</text><text x="8" y="129">50%</text><text x="20" y="214">0%</text>
+      {% if chart_points|length > 1 %}
+      <polyline class="learning-line-path" points="{% for point in chart_points %}{{ point.x }},{{ point.y }}{% if not loop.last %} {% endif %}{% endfor %}"/>
+      {% endif %}
+      {% for point in chart_points %}
+      <circle cx="{{ point.x }}" cy="{{ point.y }}" r="5"><title>{{ point.created_at }} · Incident #{{ point.incident_id }} · {{ point.confidence }}%{% if point.is_demo %} · illustrative demo sample, not model output{% endif %}</title></circle>
+      <text class="line-chart-date" x="{{ point.x - 20 }}" y="240">{{ point.created_at[5:10] }}</text>
+      {% endfor %}
+      <text x="30" y="263">Earlier triages</text><text x="{{ chart_width - 130 }}" y="263">Recent triages</text>
+    </svg>
+  </div>
+  {% else %}
+  <div class="empty-state compact-empty">
+    <p>No memory-enabled triages have been recorded yet. Ask the agent about an incident to add the first point.</p>
+    <a class="button primary" href="{{ url_for('ask_page') }}">Ask the agent</a>
+  </div>
+  {% endif %}
+  <div class="before-after">
+    <div><span>First five triages</span><strong>{{ learning.first_five_average }}%</strong></div>
+    <span class="before-after-arrow" aria-hidden="true">→</span>
+    <div><span>Latest five triages</span><strong>{{ learning.latest_five_average }}%</strong></div>
+    <small>Average match confidence{% if learning.sample_triages %}, including the illustrative samples above{% endif %}</small>
+  </div>
+</section>
+
+<section class="card content-card retained-timeline-card">
+  <div class="section-heading">
+    <div><h2>Recently retained fixes</h2><p class="section-description">Resolutions now available to inform future triage.</p></div>
+  </div>
+  {% if learning.fixes %}
+  <ol class="retained-timeline">
+    {% for incident in learning.fixes %}
+    <li>
+      <span class="retained-timeline-marker" aria-hidden="true"></span>
+      <article>
+        <div class="retained-timeline-heading">
+          <a href="{{ url_for('incident_page', incident_id=incident.id) }}">#{{ incident.id }} · {{ incident.title }}</a>
+          <time datetime="{{ incident.resolved_at }}">{{ incident.resolved_at[:10] if incident.resolved_at else "Date not recorded" }}</time>
+        </div>
+        <span class="retained-type">{{ incident.type }}</span>
+        <p><strong>Root cause</strong> {{ incident.root_cause or "Not recorded" }}</p>
+        <p><strong>Fix</strong> {{ incident.fix }}</p>
+      </article>
+    </li>
+    {% endfor %}
+  </ol>
+  {% else %}
+  <div class="empty-state compact-empty">
+    <p>No fixes have been retained yet. Resolve an incident and save its root cause and fix.</p>
+    <a class="button secondary" href="{{ url_for('dashboard') }}">Review incidents</a>
+  </div>
+  {% endif %}
+</section>
+
+{% if learning.demo_fixes %}
+<section class="card content-card retained-timeline-card">
+  <div class="section-heading">
+    <div><h2>Local demo fixes</h2><p class="section-description">Illustrative SQLite records only; these were not retained to Hindsight.</p></div>
+  </div>
+  <ol class="retained-timeline">
+    {% for incident in learning.demo_fixes %}
+    <li>
+      <span class="retained-timeline-marker" aria-hidden="true"></span>
+      <article>
+        <div class="retained-timeline-heading">
+          <a href="{{ url_for('incident_page', incident_id=incident.id) }}">#{{ incident.id }} · {{ incident.title }}</a>
+          <time datetime="{{ incident.resolved_at }}">{{ incident.resolved_at[:10] if incident.resolved_at else "Date not recorded" }}</time>
+        </div>
+        <span class="retained-type">{{ incident.type }} · Demo sample</span>
+        <p><strong>Root cause</strong> {{ incident.root_cause or "Not recorded" }}</p>
+        <p><strong>Example fix</strong> {{ incident.fix }}</p>
+      </article>
+    </li>
+    {% endfor %}
+  </ol>
+</section>
+{% endif %}
+
+<section class="card content-card hindsight-explainer">
+  <p class="eyebrow">Memory lifecycle</p>
+  <h2>How Hindsight is used</h2>
+  <div class="hindsight-steps">
+    <div><span>01</span><p><strong>Retain on resolve</strong>When the team saves a resolution, the report, root cause, fix, and failed attempts are retained as a memory.</p></div>
+    <div><span>02</span><p><strong>Recall on report</strong>When a new incident is triaged, similar memories are recalled and supplied as context for the agent.</p></div>
+  </div>
+</section>
+{% endblock %}

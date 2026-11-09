@@ -1,0 +1,12 @@
+.env
+incidents.db
+*.db
+.venv/
+venv/
+env/
+__pycache__/
+*.pyc
+*.zip
+*.log
+incident-agent-backup*/
+cookies.txt

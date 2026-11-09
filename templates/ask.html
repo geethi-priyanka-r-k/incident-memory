@@ -1,0 +1,95 @@
+{% extends "base.html" %}
+{% block title %}Ask the agent{% endblock %}
+{% block content %}
+<header class="page-header dashboard-header">
+  <div>
+    <h1>Ask the agent</h1>
+    <p class="page-description">Describe what is going wrong to get a triage informed by similar past incidents.</p>
+  </div>
+</header>
+
+<section class="card ask-card" id="ask">
+  <form id="ask-form">
+    <label for="ask-report">Describe what's going wrong</label>
+    <p class="ask-help" id="ask-help">A few details help: which service is affected, what changed, and what error do you see?</p>
+    <textarea id="ask-report" name="report" maxlength="10000" rows="5" required aria-describedby="ask-help ask-character-count" placeholder="For example: Checkout requests started timing out after this morning's deploy."></textarea>
+    <div class="ask-examples" aria-label="Example reports">
+      <span>Try an example</span>
+      <button class="example-button" type="button" data-ask-example="Checkout requests are timing out after the latest deploy.">Checkout timeouts</button>
+      <button class="example-button" type="button" data-ask-example="Users are being logged out repeatedly, even though their sessions should still be active.">Repeated logouts</button>
+      <button class="example-button" type="button" data-ask-example="The background job queue is growing and completed jobs are delayed.">Queue backlog</button>
+    </div>
+    <div class="ask-actions">
+      <a class="quiet-link" href="{{ url_for('compare_page') }}">Compare without memory</a>
+      <span class="character-count" id="ask-character-count" aria-live="polite">0 / 10,000</span>
+      <button class="button primary" id="ask-submit" type="submit">Ask the agent</button>
+    </div>
+    <p class="form-error" id="ask-error" role="alert" hidden></p>
+    <a class="saved-incident-link" id="ask-saved-link" href="#" hidden>Open saved incident</a>
+  </form>
+  <div class="triage-spinner" id="ask-spinner" hidden role="status">
+    <span class="spinner" aria-hidden="true"></span>
+    <span id="ask-spinner-text">Checking related incidents…</span>
+  </div>
+</section>
+
+<section class="card ask-result" id="ask-result" hidden aria-live="polite">
+  <div class="section-heading">
+    <div>
+      <p class="eyebrow">Agent briefing</p>
+      <h2 id="ask-seen-before"></h2>
+    </div>
+    <a class="button secondary" id="ask-incident-link" href="#">Open incident</a>
+  </div>
+  <p class="muted" id="ask-report-count" hidden></p>
+  <p class="success-record" id="ask-success-record" hidden></p>
+  <div class="ask-briefing-grid">
+    <div class="briefing-section">
+      <h3>Likely match</h3>
+      <p id="ask-likely-match"></p>
+      <p class="muted" id="ask-match-note" hidden></p>
+    </div>
+    <div class="briefing-section">
+      <div class="confidence-heading"><h3>Match confidence</h3><span id="ask-confidence-value"></span></div>
+      <div class="confidence-track" id="ask-confidence-track" role="progressbar" aria-label="Match confidence" aria-valuemin="0" aria-valuemax="100">
+        <span id="ask-confidence-bar"></span>
+      </div>
+      <p class="confidence-caption">Model-estimated from recalled memories.</p>
+    </div>
+    <div class="briefing-section">
+      <h3>Root cause</h3>
+      <p id="ask-root-cause"></p>
+    </div>
+    <div class="briefing-section">
+      <h3>Fix steps</h3>
+      <ol class="briefing-list" id="ask-fix-steps"></ol>
+    </div>
+    <section class="failed-panel briefing-section" id="ask-skip-panel" hidden>
+      <h3>Don't try these, they failed before</h3>
+      <ul class="briefing-list" id="ask-skip-these"></ul>
+    </section>
+  </div>
+  <section class="memory-strip">
+    <div class="section-heading"><h3 id="ask-memory-heading"></h3></div>
+    <ul class="memory-list" id="ask-memories"></ul>
+    <p class="muted" id="ask-no-memories" hidden>No related memories were recalled.</p>
+    <details id="ask-other-memory-section" hidden>
+      <summary>Other recalled items (not relevant)</summary>
+      <ul class="memory-list" id="ask-other-memories"></ul>
+    </details>
+  </section>
+</section>
+
+<section class="workflow-strip" aria-label="Incident workflow">
+  <article class="workflow-step"><span>01</span><div><h2>Report</h2><p>Describe the impact and evidence.</p></div></article>
+  <article class="workflow-step"><span>02</span><div><h2>Recall</h2><p>Compare with related incidents and fixes.</p></div></article>
+  <article class="workflow-step"><span>03</span><div><h2>Resolve and retain</h2><p>Save what worked for the next incident.</p></div></article>
+</section>
+
+<section class="stat-strip" aria-label="Incident summary">
+  <div><span>Open</span><strong>{{ counts.open }}</strong></div>
+  <div><span>Investigating</span><strong>{{ counts.investigating }}</strong></div>
+  <div><span>Resolved this month</span><strong>{{ counts.resolved_month_count }}</strong></div>
+  <div><span>Memories retained</span><strong>{{ counts.memories_retained }}</strong></div>
+</section>
+{% endblock %}

@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+{% block title %}With vs without memory{% endblock %}
+{% block content %}
+<header class="page-header">
+  <div>
+    <h1>With vs without memory</h1>
+    <p class="page-description">Triaging the same incident with and without recalled history shows what memory adds.</p>
+  </div>
+</header>
+
+<section class="card form-card compare-form-card">
+  <form id="compare-form">
+    <label for="compare-incident">Choose an existing incident</label>
+    <select id="compare-incident" name="incident_id">
+      <option value="">Paste an incident below</option>
+      {% for incident in incidents %}
+      <option value="{{ incident.id }}" data-report="{{ incident.title }}&#10;{{ incident.report }}" {% if selected_incident and selected_incident.id == incident.id %}selected{% endif %}>#{{ incident.id }} · {{ incident.title }}</option>
+      {% endfor %}
+    </select>
+    <label for="compare-report">Or paste the incident details</label>
+    <textarea id="compare-report" name="report" maxlength="10000" rows="5" placeholder="Describe the incident to compare.">{% if selected_incident %}{{ selected_incident.title }}
+{{ selected_incident.report }}{% endif %}</textarea>
+    <p class="field-hint">Maximum 10,000 characters.</p>
+    <p class="form-error" id="compare-error" role="alert" hidden></p>
+    <button class="button primary" id="compare-submit" type="submit">Run comparison</button>
+  </form>
+</section>
+
+<section class="comparison-results" id="comparison-results" hidden aria-live="polite">
+  <p class="comparison-input" id="comparison-input" hidden></p>
+  <p class="comparison-explanation" id="comparison-explanation"></p>
+  <div class="comparison-grid">
+    <article class="card comparison-card comparison-without">
+      <div class="section-heading">
+        <div><p class="comparison-label">A clean slate</p><h2>Without memory</h2></div>
+        <span class="confidence-value" id="without-confidence">0%</span>
+      </div>
+      <p class="confidence-caption">Model-estimated match confidence</p>
+      <h3>Likely match</h3>
+      <p id="without-match"></p>
+      <p class="muted" id="without-match-note" hidden></p>
+      <h3>Root cause</h3>
+      <p id="without-root-cause"></p>
+      <h3>Fix steps</h3>
+      <ol class="briefing-list" id="without-fixes"></ol>
+      <section class="failed-panel briefing-section" id="without-skip-panel" hidden>
+        <h3>Don't try these, they failed before</h3>
+        <ul class="briefing-list" id="without-skips"></ul>
+      </section>
+      <section class="memory-strip">
+        <h3 id="without-memory-heading">0 memories recalled</h3>
+        <p class="muted">No memories are provided to this run.</p>
+      </section>
+    </article>
+    <article class="card comparison-card comparison-with">
+      <div class="section-heading">
+        <div><p class="comparison-label">Grounded in prior incidents</p><h2>With memory</h2></div>
+        <span class="confidence-value" id="with-confidence">0%</span>
+      </div>
+      <p class="success-record" id="with-success-record" hidden></p>
+      <p class="confidence-caption">Model-estimated match confidence, based on recalled memories</p>
+      <h3>Likely match</h3>
+      <p id="with-match"></p>
+      <p class="muted" id="with-match-note" hidden></p>
+      <h3>Root cause</h3>
+      <p id="with-root-cause"></p>
+      <h3>Fix steps</h3>
+      <ol class="briefing-list" id="with-fixes"></ol>
+      <section class="failed-panel briefing-section" id="with-skip-panel" hidden>
+        <h3>Don't try these, they failed before</h3>
+        <ul class="briefing-list" id="with-skips"></ul>
+      </section>
+      <section class="memory-strip">
+        <h3 id="with-memory-heading">0 memories recalled</h3>
+        <ul class="memory-list" id="with-memories"></ul>
+        <details id="with-other-memory-section" hidden>
+          <summary>Other recalled items (not relevant)</summary>
+          <ul class="memory-list" id="with-other-memories"></ul>
+        </details>
+      </section>
+      <p class="muted" id="compare-no-memories" hidden>No recalled memories were cited as relevant.</p>
+    </article>
+  </div>
+  <div class="compare-reword-actions">
+    <p class="field-hint">A paraphrase checks whether similar meaning can still bring related memories back.</p>
+    <button class="button secondary" id="compare-reword" type="button">Try a reworded version</button>
+  </div>
+  <p class="form-error" id="compare-reword-error" role="alert" hidden></p>
+</section>
+{% endblock %}

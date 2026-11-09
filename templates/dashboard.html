@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+{% block title %}All incidents{% endblock %}
+{% block content %}
+<header class="page-header dashboard-header">
+  <div>
+    <h1>All incidents</h1>
+    <p class="page-description">Browse every reported incident, filter by status or type, and open one to investigate or resolve it.</p>
+  </div>
+</header>
+
+<section class="stat-strip" aria-label="Incident summary">
+  <div><span>Open</span><strong>{{ counts.open }}</strong></div>
+  <div><span>Investigating</span><strong>{{ counts.investigating }}</strong></div>
+  <div><span>Resolved this month</span><strong>{{ counts.resolved_month_count }}</strong></div>
+  <div><span>Memories retained</span><strong>{{ counts.memories_retained }}</strong></div>
+</section>
+
+<form class="filter-row card" method="get" action="{{ url_for('dashboard') }}">
+  <label class="filter-control">Status
+    <select name="status">
+      <option value="">All statuses</option>
+      {% for status in ("open", "investigating", "resolved") %}
+      <option value="{{ status }}" {% if filters.status == status %}selected{% endif %}>{{ status|capitalize }}</option>
+      {% endfor %}
+    </select>
+  </label>
+  <label class="filter-control">Type
+    <select name="type">
+      <option value="">All types</option>
+      {% for incident_type in options.types %}
+      <option value="{{ incident_type }}" {% if filters.type == incident_type %}selected{% endif %}>{{ incident_type }}</option>
+      {% endfor %}
+    </select>
+  </label>
+  <label class="filter-control">Source
+    <select name="source">
+      <option value="">All sources</option>
+      {% for source, label in sources.items() %}
+      <option value="{{ source }}" {% if filters.source == source %}selected{% endif %}>{{ label }}</option>
+      {% endfor %}
+    </select>
+  </label>
+  <label class="filter-control search-control">Search
+    <input type="search" name="search" value="{{ filters.search }}" placeholder="Title, report, or reporter">
+  </label>
+  <button class="button secondary filter-submit" type="submit">Apply filters</button>
+</form>
+
+<section class="card table-card" id="incident-list" aria-label="Incident list">
+  <div class="table-section-heading">
+    <div><h2>All incidents</h2><p class="section-description">Open, in-progress, and resolved work, including reports received more than once.</p></div>
+  </div>
+  {% if incidents %}
+  <table class="incident-table">
+    <thead>
+      <tr><th scope="col">ID</th><th scope="col">Title</th><th scope="col">Severity</th><th scope="col">Status</th><th scope="col">Source</th><th scope="col">Reported</th><th scope="col">Memory sync</th><th scope="col">Action</th></tr>
+    </thead>
+    <tbody>
+      {% for incident in incidents %}
+      <tr id="incident-row-{{ incident.id }}">
+        <td class="mono"><a href="{{ url_for('incident_page', incident_id=incident.id) }}">#{{ incident.id }}</a></td>
+        <td>
+          <div class="table-title-cell">
+            <a class="table-title" href="{{ url_for('incident_page', incident_id=incident.id) }}">{{ incident.title }}</a>
+            {% if incident.report_count > 1 %}<span class="report-count">x{{ incident.report_count }} reports</span>{% endif %}
+            <span class="table-category">{{ incident.type }}</span>
+          </div>
+        </td>
+        <td><span class="badge {% if incident.severity == 'P1' %}badge-danger{% endif %}">{{ incident.severity }}</span></td>
+        <td><span class="badge badge-{{ incident.status }}">{{ incident.status|capitalize }}</span></td>
+        <td>{{ sources.get(incident.source, incident.source|capitalize) }}</td>
+        <td><time datetime="{{ incident.created_at }}">{{ incident.created_at[:16]|replace("T", " ") }}</time></td>
+        <td><span class="sync-state">{{ incident.memory_sync|capitalize }}</span></td>
+        <td>{% if incident.status == "open" %}<button class="text-button delete-incident" type="button" data-incident-id="{{ incident.id }}">Delete</button>{% endif %}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <div class="empty-state">
+    <p>No incidents match these filters. Report an incident to add one.</p>
+    <a class="button primary" href="{{ url_for('report_page') }}">Report a problem</a>
+  </div>
+  {% endif %}
+  <p class="form-error table-error" id="delete-error" role="alert" hidden></p>
+</section>
+{% endblock %}

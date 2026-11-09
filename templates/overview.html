@@ -1,0 +1,177 @@
+{% extends "base.html" %}
+{% block title %}Home{% endblock %}
+{% block content %}
+<header class="page-header overview-page-header">
+  <div>
+    <h1>Home</h1>
+    <p class="page-description">Your starting point: see recent incidents, ask the agent about an issue, and check what the team has learned.</p>
+  </div>
+</header>
+
+<section class="overview-hero" aria-labelledby="overview-greeting">
+  <p class="hero-kicker">Your incident workspace</p>
+  <h2 id="overview-greeting">Good morning, {{ first_name|capitalize }}</h2>
+  <p class="overview-hero-copy">Start with the symptoms. The agent will look for relevant past incidents.</p>
+  <section class="overview-ask-card" id="ask">
+    <form id="ask-form">
+      <label for="ask-report">Describe what's going wrong</label>
+      <textarea id="ask-report" name="report" maxlength="10000" rows="3" required aria-describedby="ask-help ask-character-count" placeholder="Include the affected service, what changed, and any error you see."></textarea>
+      <div class="overview-ask-footer">
+        <p class="ask-help" id="ask-help">Your report is saved as an incident before triage begins.</p>
+        <span class="character-count" id="ask-character-count" aria-live="polite">0 / 10,000</span>
+        <button class="button primary" id="ask-submit" type="submit">Ask</button>
+      </div>
+      <p class="form-error" id="ask-error" role="alert" hidden></p>
+      <a class="saved-incident-link" id="ask-saved-link" href="#" hidden>Open saved incident</a>
+    </form>
+    <div class="triage-spinner" id="ask-spinner" hidden role="status">
+      <span class="spinner" aria-hidden="true"></span>
+      <span id="ask-spinner-text">Checking related incidents…</span>
+    </div>
+  </section>
+  <section class="card overview-ask-result" id="ask-result" hidden aria-live="polite">
+    <div class="section-heading">
+      <div><p class="eyebrow">Agent briefing</p><h2 id="ask-seen-before"></h2></div>
+      <a class="button secondary" id="ask-incident-link" href="#">Open incident</a>
+    </div>
+    <p class="muted" id="ask-report-count" hidden></p>
+    <p class="success-record" id="ask-success-record" hidden></p>
+    <div class="ask-briefing-grid">
+      <div class="briefing-section"><h3>Likely match</h3><p id="ask-likely-match"></p><p class="muted" id="ask-match-note" hidden></p></div>
+      <div class="briefing-section">
+        <div class="confidence-heading"><h3>Match confidence</h3><span id="ask-confidence-value"></span></div>
+        <div class="confidence-track" id="ask-confidence-track" role="progressbar" aria-label="Match confidence" aria-valuemin="0" aria-valuemax="100"><span id="ask-confidence-bar"></span></div>
+        <p class="confidence-caption">Model-estimated from recalled memories.</p>
+      </div>
+      <div class="briefing-section"><h3>Root cause</h3><p id="ask-root-cause"></p></div>
+      <div class="briefing-section"><h3>Fix steps</h3><ol class="briefing-list" id="ask-fix-steps"></ol></div>
+      <section class="failed-panel briefing-section" id="ask-skip-panel" hidden><h3>Don't try these, they failed before</h3><ul class="briefing-list" id="ask-skip-these"></ul></section>
+    </div>
+    <section class="memory-strip"><h3 id="ask-memory-heading"></h3><ul class="memory-list" id="ask-memories"></ul><p class="muted" id="ask-no-memories" hidden>No related memories were recalled.</p><details id="ask-other-memory-section" hidden><summary>Other recalled items (not relevant)</summary><ul class="memory-list" id="ask-other-memories"></ul></details></section>
+  </section>
+</section>
+
+<section class="workflow-strip overview-workflow" aria-label="Incident workflow">
+  <article class="workflow-step"><span>01</span><div><h2>Report from anywhere</h2><p>Bring together issues from web, monitoring, support, or Band.</p></div></article>
+  <article class="workflow-step"><span>02</span><div><h2>Agent recalls history</h2><p>Check related incidents, fixes, and dead ends.</p></div></article>
+  <article class="workflow-step"><span>03</span><div><h2>Resolve and remember</h2><p>Keep the useful details for the next response.</p></div></article>
+</section>
+
+<section class="overview-stats" aria-label="Incident response summary">
+  <article class="card overview-stat">
+    <div><span class="stat-label">Open incidents</span><strong data-count-target="{{ counts.open }}">0</strong><small>Need attention</small></div>
+    <svg class="stat-sparkline" viewBox="0 0 90 32" aria-hidden="true"><polyline points="{{ sparkline_paths.open }}"/></svg>
+  </article>
+  <article class="card overview-stat">
+    <div><span class="stat-label">Resolved this month</span><strong data-count-target="{{ counts.resolved_month_count }}">0</strong><small>Closed this month</small></div>
+    <svg class="stat-sparkline" viewBox="0 0 90 32" aria-hidden="true"><polyline points="{{ sparkline_paths.resolved }}"/></svg>
+  </article>
+  <article class="card overview-stat memory-stat">
+    <div><span class="stat-label">Memories retained</span><strong data-count-target="{{ counts.memories_retained }}">0</strong><small>Available for recall</small></div>
+    <svg class="stat-sparkline" viewBox="0 0 90 32" aria-hidden="true"><polyline points="{{ sparkline_paths.retained }}"/></svg>
+  </article>
+  <article class="card overview-stat">
+    <div><span class="stat-label">Median time to resolve</span><strong class="stat-median">{% if median_minutes is not none %}{{ median_minutes }}<small> min</small>{% else %}—{% endif %}</strong><small>{% if median_minutes is not none %}Across resolved incidents{% else %}Not enough data yet{% endif %}</small></div>
+    <svg class="stat-sparkline" viewBox="0 0 90 32" aria-hidden="true"><polyline points="{{ sparkline_paths.resolved }}"/></svg>
+  </article>
+</section>
+
+<div class="overview-grid">
+  <section class="card overview-panel live-feed-panel">
+    <div class="section-heading">
+      <div><h2>Live incident feed</h2><p class="section-description">Most recent reports across the team.</p></div>
+      <a class="quiet-link" href="{{ url_for('dashboard') }}">All incidents</a>
+    </div>
+    <p class="feed-status" id="feed-status" role="status" hidden></p>
+    <div class="live-feed-list" id="live-feed-list" data-refresh-url="{{ url_for('dashboard') }}">
+      {% for incident in incidents %}
+      <a class="live-feed-row" href="{{ url_for('incident_page', incident_id=incident.id) }}">
+        <span class="feed-source feed-source-{{ incident.source }}">{{ sources.get(incident.source, incident.source|capitalize) }}</span>
+        <span class="feed-title">{{ incident.title }}</span>
+        <span class="badge {% if incident.severity == 'P1' %}badge-danger{% endif %}">{{ incident.severity }}</span>
+        <span class="badge badge-{{ incident.status }}">{{ incident.status|capitalize }}</span>
+        <time datetime="{{ incident.created_at }}">{{ incident.created_at[:16]|replace("T", " ") }}</time>
+      </a>
+      {% else %}
+      <div class="empty-state compact-empty"><p>No incidents have been reported yet.</p><a class="button primary" href="{{ url_for('report_page') }}">Report a problem</a></div>
+      {% endfor %}
+    </div>
+  </section>
+
+  <section class="card overview-panel learning-panel">
+    <div class="section-heading">
+      <div><h2>Learning curve</h2><p class="section-description">Confidence for triages that recalled memories.</p></div>
+      <a class="quiet-link" href="{{ url_for('memory_page') }}">View learning</a>
+    </div>
+    {% if chart_points %}
+    <div class="chart-scroll">
+      <svg class="overview-learning-chart" viewBox="0 0 {{ chart_width }} 210" role="img" aria-label="Match confidence over time">
+        <line x1="20" y1="40" x2="{{ chart_width - 20 }}" y2="40"/>
+        <line x1="20" y1="110" x2="{{ chart_width - 20 }}" y2="110"/>
+        <line x1="20" y1="180" x2="{{ chart_width - 20 }}" y2="180"/>
+        {% if chart_points|length > 1 %}<polyline class="learning-line" points="{% for point in chart_points %}{{ point.x }},{{ point.y }}{% if not loop.last %} {% endif %}{% endfor %}"/>{% endif %}
+        {% for point in chart_points %}<circle cx="{{ point.x }}" cy="{{ point.y }}" r="3"><title>{{ point.confidence }}% · {{ point.created_at[:10] }}{% if point.is_demo %} · illustrative demo sample, not model output{% endif %}</title></circle>{% endfor %}
+        <text x="20" y="202">Earlier</text><text x="{{ chart_width - 64 }}" y="202">Recent</text>
+      </svg>
+    </div>
+    {% if learning.sample_triages %}<p class="demo-data-note">Includes {{ learning.sample_triages }} illustrative local demo samples; their confidence values are not model output.</p>{% endif %}
+    <div class="average-row">
+      <p>First 5 average <strong>{{ learning.first_five_average }}%</strong></p>
+      <p>Latest 5 average <strong>{{ learning.latest_five_average }}%</strong></p>
+    </div>
+    {% else %}
+    <div class="empty-state compact-empty"><p>Match confidence will appear after the first memory-backed triage.</p><a class="button secondary" href="{{ url_for('ask_page') }}">Ask the agent</a></div>
+    {% endif %}
+  </section>
+
+  <section class="card overview-panel">
+    <div class="section-heading">
+      <div><h2>Knowledge gaps</h2><p class="section-description">Open incidents where triage did not find related memory.</p></div>
+    </div>
+    {% if knowledge_gaps %}
+    <ul class="gap-list">
+      {% for incident in knowledge_gaps %}
+      <li><div><a href="{{ url_for('incident_page', incident_id=incident.id) }}">{{ incident.title }}</a><span>#{{ incident.id }} · {{ incident.type }}</span></div><a class="button secondary" href="{{ url_for('incident_page', incident_id=incident.id) }}#resolve-form">Document the fix</a></li>
+      {% endfor %}
+    </ul>
+    {% else %}
+    <div class="empty-state compact-empty"><p>No open triages are currently waiting on a relevant memory.</p><a class="button secondary" href="{{ url_for('dashboard') }}">View incidents</a></div>
+    {% endif %}
+  </section>
+
+  <section class="card overview-panel coverage-panel">
+    <div class="section-heading">
+      <div><h2>Memory coverage</h2><p class="section-description">Incident types represented in the record.</p></div>
+      <a class="quiet-link" href="{{ url_for('memory_page') }}">More detail</a>
+    </div>
+    {% if coverage %}
+    <ul class="coverage-list">
+      {% for item in coverage %}
+      <li><span>{{ item.type }}</span><span class="coverage-track" role="img" aria-label="{{ item.count }} incidents"><span style="width: {{ item.percent }}%"></span></span><strong>{{ item.count }}</strong></li>
+      {% endfor %}
+    </ul>
+    {% else %}
+    <div class="empty-state compact-empty"><p>Coverage will appear as incidents are reported.</p><a class="button primary" href="{{ url_for('report_page') }}">Report a problem</a></div>
+    {% endif %}
+  </section>
+
+  <section class="card overview-panel memory-health-panel">
+    <div class="section-heading">
+      <div><h2>Memory health</h2><p class="section-description">Retained fixes and the ones needing review.</p></div>
+    </div>
+    <div class="memory-health">
+      <div class="health-row success">
+        <div><span class="health-label">Fixes with a success record</span><strong class="health-value">{{ memory_health.success_fixes }}</strong></div>
+        <span class="health-note">Outcome recorded as worked</span>
+      </div>
+      <div class="health-row review">
+        <div><span class="health-label">Fixes marked Needs review</span><strong class="health-value">{{ memory_health.needs_review_fixes }}</strong></div>
+        <span class="health-note">Two or more did-not-work outcomes</span>
+      </div>
+    </div>
+    {% if memory_health.success_fixes == 0 and memory_health.needs_review_fixes == 0 %}
+    <p class="muted" style="margin-top:10px">No outcome records yet. Resolve an incident and record whether the fix worked.</p>
+    {% endif %}
+  </section>
+</div>
+{% endblock %}

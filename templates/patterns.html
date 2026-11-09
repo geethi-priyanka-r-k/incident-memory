@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block title %}Recurring problems{% endblock %}
+{% block content %}
+<header class="page-header">
+  <div>
+    <h1>Recurring problems</h1>
+    <p class="page-description">Spot the kinds of incidents that keep coming back.</p>
+  </div>
+</header>
+
+<div class="pattern-grid">
+  {% for days, patterns in ((30, patterns_30), (90, patterns_90)) %}
+  <section class="card content-card">
+    <h2>Last {{ days }} days</h2>
+    {% if patterns %}
+      {% for pattern in patterns %}
+      <article class="pattern-item">
+        {% if pattern.count >= 3 %}
+        <p class="pattern-notice">{{ pattern.notice }}</p>
+        {% else %}
+        <p class="pattern-summary">{{ pattern.notice }}</p>
+        {% endif %}
+        <div class="pattern-bar-row">
+          <span>{{ pattern.type }}</span>
+          <span class="pattern-bar-track" role="img" aria-label="{{ pattern.count }} incidents in the last {{ days }} days"><span style="width: {{ pattern.bar_percent }}%"></span></span>
+          <strong>{{ pattern.count }}</strong>
+        </div>
+        <ul class="pattern-links">
+          {% for incident in pattern.incidents %}
+          <li><a href="{{ url_for('incident_page', incident_id=incident.id) }}">#{{ incident.id }} · {{ incident.title }}</a></li>
+          {% endfor %}
+        </ul>
+      </article>
+      {% endfor %}
+    {% else %}
+    <div class="empty-state compact-empty">
+      <p>No resolved incidents were recorded in this window. Resolve and categorize incidents to spot repeat patterns.</p>
+      <a class="button primary" href="{{ url_for('dashboard') }}">View incidents</a>
+    </div>
+    {% endif %}
+  </section>
+  {% endfor %}
+</div>
+{% endblock %}

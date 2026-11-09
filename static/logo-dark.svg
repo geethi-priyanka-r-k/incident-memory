@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 260 64" role="img" aria-labelledby="title">
+  <title id="title">Incident Memory</title>
+  <g transform="translate(2 2)">
+    <path fill="#F4EFE6" d="M7 16a9 9 0 0 1 9-9h27a14 14 0 0 1 14 14v4l8 7-7 4v5a9 9 0 0 1-9 9H35v7H17v-8a11 11 0 0 1-10-11V16Z"/>
+    <rect x="15" y="15" width="21" height="27" rx="3" fill="#08302F"/>
+    <path fill="none" stroke="#F4EFE6" stroke-width="1.5" d="M18 18h15v6H18zm0 8h15v6H18zm0 8h12v5H18z"/>
+    <path fill="#3ED8B5" d="M18 32h17v-2h3v6h-3v-2H18z"/>
+    <circle cx="47" cy="21" r="2" fill="#D9633B"/>
+  </g>
+  <text x="76" y="29" fill="#F4EFE6" font-family="system-ui,Segoe UI,sans-serif" font-size="17" font-weight="650">Incident</text>
+  <text x="76" y="49" fill="#F4EFE6" font-family="system-ui,Segoe UI,sans-serif" font-size="17" font-weight="450">Memory</text>
+</svg>

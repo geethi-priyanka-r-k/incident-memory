@@ -1,0 +1,188 @@
+{% extends "base.html" %}
+{% block title %}Incident #{{ incident.id }}{% endblock %}
+{% block content %}
+<p class="back-link"><a href="{{ url_for('dashboard') }}">All incidents</a></p>
+<header class="page-header incident-page-header">
+  <div>
+    <h1>{{ incident.title }}</h1>
+    <p class="page-description">Review the report, see related memories, and record a resolution for the next incident.</p>
+    {% if incident.is_demo %}<p class="demo-data-note">Local demo sample. Any confidence or memory shown here is illustrative, not model output or a Hindsight recall.</p>{% endif %}
+    <p class="incident-meta-line">{{ incident.type }} · <span class="badge {% if incident.severity == 'P1' %}badge-danger{% endif %}">{{ incident.severity }}</span>{% if incident.report_count > 1 %} · x{{ incident.report_count }} reports{% endif %}</p>
+  </div>
+  <form id="status-form" class="status-control">
+    <label for="incident-status">Status</label>
+    <select id="incident-status" name="status">
+      {% for status in ("open", "investigating", "resolved") %}
+      <option value="{{ status }}" {% if incident.status == status %}selected{% endif %}>{{ status|capitalize }}</option>
+      {% endfor %}
+    </select>
+    <button class="button secondary" type="submit">Update status</button>
+  </form>
+</header>
+<p class="inline-message" id="status-message" role="status" hidden></p>
+
+<div class="incident-columns">
+  <div class="incident-main-column">
+    <section class="card">
+      <div class="section-heading">
+        <h2>Report</h2>
+        <span class="badge badge-{{ incident.status }}">{{ incident.status|capitalize }}</span>
+      </div>
+      <p class="report-body">{{ incident.report }}</p>
+      <dl class="metadata-list">
+        <div><dt>Source</dt><dd>{{ incident.source|capitalize }}</dd></div>
+        <div><dt>Reported by</dt><dd>{{ incident.reported_by }}</dd></div>
+        <div><dt>Reported</dt><dd><time datetime="{{ incident.created_at }}">{{ incident.created_at[:16]|replace("T", " ") }}</time></dd></div>
+      </dl>
+    </section>
+
+    <section class="card">
+      <h2>Timeline</h2>
+      <ol class="timeline">
+        <li><span class="timeline-dot"></span><div><strong>Incident reported</strong><time datetime="{{ incident.created_at }}">{{ incident.created_at[:16]|replace("T", " ") }}</time></div></li>
+        {% for event in events %}
+        <li><span class="timeline-dot"></span><div><strong>{{ event.event }}</strong><time datetime="{{ event.created_at }}">{{ event.created_at[:16]|replace("T", " ") }}</time></div></li>
+        {% endfor %}
+        {% if incident.status == "investigating" %}
+        <li><span class="timeline-dot"></span><div><strong>Investigation started</strong><span>Current status</span></div></li>
+        {% endif %}
+        {% if incident.resolved_at %}
+        <li><span class="timeline-dot"></span><div><strong>Incident resolved</strong><time datetime="{{ incident.resolved_at }}">{{ incident.resolved_at[:16]|replace("T", " ") }}</time></div></li>
+        {% endif %}
+      </ol>
+    </section>
+
+    <section class="card resolution-card" id="resolution-card">
+      <h2>Record the resolution</h2>
+      <p class="section-description">Save what fixed the issue so it can be recalled during a future incident.</p>
+      <form id="resolve-form" data-incident-id="{{ incident.id }}">
+        <label for="root-cause">Root cause</label>
+        <textarea id="root-cause" name="root_cause" rows="3" required>{{ incident.root_cause or "" }}</textarea>
+        <label for="fix">Fix</label>
+        <textarea id="fix" name="fix" rows="3" required>{{ incident.fix or "" }}</textarea>
+        <label for="not-worked">What did not work?</label>
+        <textarea id="not-worked" name="not_worked" rows="2">{{ incident.not_worked or "" }}</textarea>
+        <div class="form-actions">
+          <span class="sync-state" id="memory-state" role="status">Memory sync: {{ incident.memory_sync }}</span>
+          <button class="button primary" id="resolve-submit" type="submit">Save resolution</button>
+        </div>
+        <p class="form-error" id="resolve-error" role="alert" hidden></p>
+        <button class="button secondary" id="retry-memory" type="button" {% if incident.memory_sync != "failed" %}hidden{% endif %}>Retry memory save</button>
+        <button class="button secondary reword-button" id="try-reworded" type="button" data-incident-id="{{ incident.id }}" {% if incident.memory_sync != "synced" %}hidden{% endif %}>Try a reworded version</button>
+        <p class="form-error" id="reworded-error" role="alert" hidden></p>
+        <div id="resolve-saved-state" class="resolve-saved" hidden>
+          <span style="color:var(--resolved)">✔</span>
+          <strong>Resolution saved.</strong> The agent will recognise this next time.
+        </div>
+      </form>
+    </section>
+  </div>
+
+  <aside class="incident-side-column">
+    <section class="card briefing-card"
+      id="briefing-panel"
+      data-incident-id="{{ incident.id }}"
+      data-has-briefing="{{ 'true' if briefing else 'false' }}">
+      <div class="section-heading briefing-title">
+        <h2>Agent briefing</h2>
+        <span class="memory-badge" id="from-memory-badge" {% if not incident.is_demo and (not briefing or not briefing.memories) %}hidden{% endif %}>
+          {% if incident.is_demo %}Illustrative sample{% else %}<span aria-hidden="true"></span>From memory{% endif %}
+        </span>
+      </div>
+      <div class="triage-spinner" id="triage-spinner" {% if briefing %}hidden{% endif %} role="status">
+        <span class="spinner" aria-hidden="true"></span>
+        <span id="triage-spinner-text">Reviewing related incidents…</span>
+      </div>
+      <p class="form-error" id="triage-error" role="alert" hidden></p>
+      <button class="button secondary" id="retry-triage" type="button" hidden>Retry triage</button>
+      <div id="briefing-content" {% if not briefing %}hidden{% endif %}>
+        <div class="briefing-section">
+          <h3>Likely match</h3>
+          <p id="likely-match">{{ briefing.likely_match if briefing else "" }}</p>
+          <p class="muted" id="match-note" {% if not briefing or not briefing.match_note %}hidden{% endif %}>{{ briefing.match_note if briefing else "" }}</p>
+          {% if briefing and briefing.memory_sources %}<div class="claim-citations">{% for source in briefing.memory_sources %}<button type="button" class="citation-marker" data-memory-source="{{ source.incident_id }}" data-match-method="{{ source.method }}" aria-label="Open source incident {{ source.incident_id }}">[{{ loop.index }}]</button>{% endfor %}</div>{% endif %}
+          {% if briefing and briefing.outcome_summary %}<p class="success-record" id="success-record">{{ briefing.outcome_summary.text }}{% if briefing.outcome_summary.needs_review %} <span class="review-badge">Needs review</span>{% endif %}</p>{% endif %}
+        </div>
+        <div class="briefing-section">
+          <div class="confidence-heading"><h3>Match confidence</h3><span id="confidence-value">{{ briefing.match_confidence if briefing else 0 }}%</span></div>
+          <div class="confidence-track" role="progressbar" aria-label="Match confidence" aria-valuemin="0" aria-valuemax="100" aria-valuenow="{{ briefing.match_confidence if briefing else 0 }}">
+            <span id="confidence-bar" style="width: {{ briefing.match_confidence if briefing else 0 }}%"></span>
+          </div>
+          <p class="muted confidence-note">{% if incident.is_demo %}Illustrative value only; this sample was not generated by the model.{% else %}Model-estimated from the report and recalled memories; not a calibrated probability.{% endif %}</p>
+        </div>
+        <div class="briefing-section">
+          <h3>Root cause</h3>
+          <p id="root-cause-hypothesis">{{ briefing.root_cause if briefing else "" }}</p>
+          {% if briefing and briefing.memory_sources %}<div class="claim-citations">{% for source in briefing.memory_sources %}<button type="button" class="citation-marker" data-memory-source="{{ source.incident_id }}" data-match-method="{{ source.method }}" aria-label="Open source incident {{ source.incident_id }}">[{{ loop.index }}]</button>{% endfor %}</div>{% endif %}
+        </div>
+        <div class="briefing-section">
+          <h3>Fix steps</h3>
+          <ol id="fix-steps" class="briefing-list">
+            {% if briefing %}{% for step in briefing.fix_steps %}<li>{{ step }}{% for source_index in briefing.claim_sources.fix_steps|default([]) %}<button type="button" class="citation-marker" data-memory-source="{{ briefing.memory_sources[source_index - 1].incident_id }}" data-match-method="{{ briefing.memory_sources[source_index - 1].method }}" aria-label="Open source incident {{ briefing.memory_sources[source_index - 1].incident_id }}">[{{ source_index }}]</button>{% endfor %}</li>{% endfor %}{% endif %}
+          </ol>
+        </div>
+        <section class="failed-panel briefing-section" id="skip-panel" {% if not briefing or not briefing.skip_these %}hidden{% endif %}>
+          <h3>Don't try these, they failed before</h3>
+          <ul id="skip-these" class="briefing-list">
+            {% if briefing %}{% for step in briefing.skip_these %}<li>{{ step }}{% for source_index in briefing.claim_sources.skip_these|default([]) %}<button type="button" class="citation-marker" data-memory-source="{{ briefing.memory_sources[source_index - 1].incident_id }}" data-match-method="{{ briefing.memory_sources[source_index - 1].method }}" aria-label="Open source incident {{ briefing.memory_sources[source_index - 1].incident_id }}">[{{ source_index }}]</button>{% endfor %}</li>{% endfor %}{% endif %}
+          </ul>
+        </section>
+        <section class="memory-strip briefing-section">
+          <h3 id="memories-heading">Memories used · {{ briefing.memories|length if briefing else 0 }}</h3>
+          <ul id="memories-used" class="memory-list">
+            {% if briefing %}{% for memory in briefing.memories %}<li><blockquote>{{ memory }}</blockquote><span class="memory-citation">{% if incident.is_demo %}Local demo text; not recalled from Hindsight{% else %}Recalled incident memory{% endif %}</span>{% for source in briefing.memory_sources|default([]) if source.memory == memory %}<button type="button" class="citation-marker" data-memory-source="{{ source.incident_id }}" data-match-method="{{ source.method }}" aria-label="Open source incident {{ source.incident_id }}">Incident #{{ source.incident_id }}</button>{% endfor %}</li>{% endfor %}{% endif %}
+          </ul>
+          <p class="muted" id="no-memories" {% if not briefing or briefing.memories or briefing.other_memories %}hidden{% endif %}>No related memories were found.</p>
+          <details id="other-memory-section" {% if not briefing or not briefing.other_memories %}hidden{% endif %}>
+            <summary>Other recalled items (not relevant)</summary>
+            <ul id="other-memories" class="memory-list">
+              {% if briefing %}{% for memory in briefing.other_memories|default([]) %}<li><blockquote>{{ memory }}</blockquote><span class="memory-citation">Recalled incident memory</span></li>{% endfor %}{% endif %}
+            </ul>
+          </details>
+        </section>
+      </div>
+    </section>
+
+    {% if not incident.is_demo %}
+    <section class="card outcome-card" id="outcome-card" {% if not briefing %}hidden{% endif %}>
+      <h2>Did the suggested fix work?</h2>
+      <p class="section-description">Record what happened so this history can improve future briefings.</p>
+      <form id="outcome-form" data-incident-id="{{ incident.id }}">
+        <fieldset>
+          <legend>Outcome</legend>
+          <label><input type="radio" name="result" value="worked" required> Worked</label>
+          <label><input type="radio" name="result" value="partly"> Partly</label>
+          <label><input type="radio" name="result" value="didnt_work"> Didn't work</label>
+        </fieldset>
+        <label for="outcome-note">Optional note</label>
+        <textarea id="outcome-note" name="note" rows="2" maxlength="2000"></textarea>
+        <button class="button primary" id="outcome-submit" type="submit">Save outcome</button>
+        <p id="outcome-status" class="sync-state" role="status" hidden></p>
+        <p id="outcome-error" class="form-error" role="alert" hidden></p>
+      </form>
+    </section>
+    {% endif %}
+  </aside>
+</div>
+
+<section class="card reworded-result" id="reworded-result" hidden aria-live="polite">
+  <div class="section-heading">
+    <h2>Reworded report</h2>
+    <a class="button secondary" id="reworded-incident-link" href="#">Open incident</a>
+  </div>
+  <p class="report-body" id="reworded-report"></p>
+  <h3 id="reworded-seen-before"></h3>
+  <p class="success-record" id="reworded-success-record" hidden></p>
+  <div class="ask-briefing-grid">
+    <div class="briefing-section"><h3>Likely match</h3><p id="reworded-likely-match"></p><p class="muted" id="reworded-match-note" hidden></p></div>
+    <div class="briefing-section">
+      <div class="confidence-heading"><h3>Match confidence</h3><span id="reworded-confidence-value"></span></div>
+      <div class="confidence-track" id="reworded-confidence-track" role="progressbar" aria-label="Match confidence" aria-valuemin="0" aria-valuemax="100"><span id="reworded-confidence-bar"></span></div>
+    </div>
+    <div class="briefing-section"><h3>Root cause</h3><p id="reworded-root-cause"></p></div>
+    <div class="briefing-section"><h3>Fix steps</h3><ol class="briefing-list" id="reworded-fix-steps"></ol></div>
+    <section class="failed-panel briefing-section" id="reworded-skip-panel" hidden><h3>Don't try these, they failed before</h3><ul class="briefing-list" id="reworded-skip-these"></ul></section>
+  </div>
+  <section class="memory-strip"><h3 id="reworded-memory-heading"></h3><ul class="memory-list" id="reworded-memories"></ul><p class="muted" id="reworded-no-memories" hidden>No related memories were recalled.</p><details id="reworded-other-memory-section" hidden><summary>Other recalled items (not relevant)</summary><ul class="memory-list" id="reworded-other-memories"></ul></details></section>
+</section>
+{% endblock %}

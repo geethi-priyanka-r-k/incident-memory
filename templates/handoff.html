@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block title %}Shift handoff{% endblock %}
+{% block content %}
+<header class="page-header">
+  <div>
+    <h1>Shift handoff</h1>
+    <p class="page-description">A snapshot of active incidents, attempted fixes, and agent recommendations for the next shift.</p>
+  </div>
+</header>
+
+<section class="card content-card handoff-overview">
+  <div class="section-heading">
+    <div><h2>Active incidents</h2><p class="section-description">{{ incidents|length }} open or investigating incidents, ordered by severity.</p></div>
+    <span class="badge">{{ incidents|length }} active</span>
+  </div>
+  <p class="form-error" id="handoff-copy-error" role="alert" hidden></p>
+  <p class="handoff-copy-status" id="handoff-copy-status" role="status" hidden></p>
+  {% if incidents %}
+  <div class="handoff-list" id="handoff-content">
+    {% for incident in incidents %}
+    <article class="handoff-item" data-handoff-item>
+      <header>
+        <div><span class="mono">#{{ incident.id }}</span><a href="{{ url_for('incident_page', incident_id=incident.id) }}">{{ incident.title }}</a></div>
+        <div class="handoff-badges">
+          <span class="badge {% if incident.severity == 'P1' %}badge-danger{% endif %}">{{ incident.severity }}</span>
+          <span class="badge badge-{{ incident.status }}">{{ incident.status|capitalize }}</span>
+        </div>
+      </header>
+      <p class="handoff-reported">{{ incident.type }} · {{ incident.source|capitalize }} · Reported {{ incident.created_at[:16]|replace("T", " ") }}</p>
+      <p class="handoff-report">{{ incident.report }}</p>
+      <div class="handoff-detail-grid">
+        <section>
+          <h3>What was tried</h3>
+          {% if incident.tried %}<p>{{ incident.tried }}</p>
+          {% elif incident.events %}<ul>{% for event in incident.events %}<li>{{ event.event }} · {{ event.created_at[:16]|replace("T", " ") }}</li>{% endfor %}</ul>
+          {% else %}<p class="muted">No attempted fix has been recorded.</p>{% endif %}
+        </section>
+        <section>
+          <h3>Agent recommendations</h3>
+          {% if incident.recommendation %}<ol>{% for step in incident.recommendation %}<li>{{ step }}</li>{% endfor %}</ol>
+          {% elif incident.briefing_json %}<p>Review the saved incident briefing for this report.</p>
+          {% else %}<p class="muted">No recommendation is saved yet. <a href="{{ url_for('incident_page', incident_id=incident.id) }}">Open the incident to run triage.</a></p>{% endif %}
+        </section>
+      </div>
+    </article>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="empty-state">
+    <p>No incidents need an on-call handoff right now.</p>
+    <a class="button primary" href="{{ url_for('dashboard') }}">View incidents</a>
+  </div>
+  {% endif %}
+</section>
+{% endblock %}

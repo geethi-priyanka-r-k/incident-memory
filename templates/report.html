@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block title %}Report a problem{% endblock %}
+{% block content %}
+<header class="page-header">
+  <div>
+    <h1>Report a problem</h1>
+    <p class="page-description">Report a new incident so the team can investigate it and compare it with past fixes.</p>
+  </div>
+</header>
+
+<section class="card form-card">
+  <form id="report-form">
+    <label for="title">Title</label>
+    <input id="title" name="title" maxlength="160" required placeholder="For example, Checkout requests are timing out">
+
+    <label for="report">What is happening?</label>
+    <p class="field-hint">Include who or what is affected, when it started, and any error details.</p>
+    <textarea id="report" name="report" maxlength="10000" rows="6" required aria-describedby="report-character-count" data-character-count="report-character-count" placeholder="Describe the symptoms, impact, and any useful error details."></textarea>
+    <p class="character-count form-character-count" id="report-character-count" aria-live="polite">0 / 10,000</p>
+
+    <label for="where-seen">Where was it seen?</label>
+    <input id="where-seen" name="where_seen" placeholder="Service, environment, dashboard, or location">
+
+    <div class="form-grid">
+      <div>
+        <label for="source">Source</label>
+        <select id="source" name="source" required>
+          <option value="web">Web</option>
+          <option value="support">Support</option>
+          <option value="tester">Tester</option>
+          <option value="monitoring">Monitoring</option>
+          <option value="band">Band</option>
+        </select>
+      </div>
+      <div>
+        <label for="reported-by">Your name</label>
+        <input id="reported-by" name="reported_by" maxlength="100" required autocomplete="name">
+      </div>
+    </div>
+
+    <p class="form-error" id="report-error" role="alert" hidden></p>
+    <div class="form-actions">
+      <a class="button secondary" href="{{ url_for('dashboard') }}">Cancel</a>
+      <button class="button primary" id="report-submit" type="submit">Save incident</button>
+    </div>
+  </form>
+</section>
+{% endblock %}

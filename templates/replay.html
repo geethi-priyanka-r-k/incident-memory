@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block title %}Memory over time{% endblock %}
+{% block content %}
+<header class="page-header">
+  <div>
+    <h1>Memory over time</h1>
+    <p class="page-description">Replay how recalled history changed a briefing at each resolution checkpoint.</p>
+  </div>
+</header>
+{% if not incidents %}
+<div class="empty-state">
+  <p>No resolved incidents are available to replay yet. Resolve an incident first.</p>
+  <a class="button primary" href="{{ url_for('dashboard') }}">View incidents</a>
+</div>
+{% else %}
+<section class="card content-card replay-controls">
+  <form method="post" action="{{ url_for('replay_page') }}">
+    <label for="replay-incident">Resolved incident</label>
+    <select id="replay-incident" name="incident_id" required>
+      <option value="">Choose an incident</option>
+      {% for incident in incidents %}
+      <option value="{{ incident.id }}" {% if selected and selected.id == incident.id %}selected{% endif %}>#{{ incident.id }} · {{ incident.title }}</option>
+      {% endfor %}
+    </select>
+    <button class="button primary" type="submit">Replay checkpoints</button>
+  </form>
+  <p class="confidence-caption">Each column rebuilds the briefing using only recalled memories linked to incidents resolved by that checkpoint. Scores are model-estimated.</p>
+</section>
+{% if error %}<p class="form-error" role="alert">{{ error }}</p>{% endif %}
+{% if results %}
+<section class="replay-grid" aria-label="Memory replay results">
+  {% for result in results %}
+  <article class="card content-card replay-card">
+    <p class="eyebrow">{{ result.checkpoint }}</p>
+    <h2>Through {{ result.cutoff }}</h2>
+    <p class="success-record">{{ result.outcome_summary.text }}{% if result.outcome_summary.needs_review %} <span class="review-badge">Needs review</span>{% endif %}</p>
+    <p class="replay-confidence"><strong>{{ result.match_confidence }}%</strong><span>Model-estimated confidence</span></p>
+    <div><h3>Likely match</h3><p>{{ result.likely_match }}{% for source in result.memory_sources %}<button type="button" class="citation-marker" data-memory-source="{{ source.incident_id }}" data-match-method="{{ source.method }}" aria-label="Open source incident {{ source.incident_id }}">[{{ loop.index }}]</button>{% endfor %}</p>{% if result.match_note %}<p class="muted">{{ result.match_note }}</p>{% endif %}</div>
+    <div><h3>Fix steps</h3>
+      {% if result.fix_steps %}<ol>{% for step in result.fix_steps %}<li>{{ step }}{% for source in result.memory_sources %}<button type="button" class="citation-marker" data-memory-source="{{ source.incident_id }}" data-match-method="{{ source.method }}" aria-label="Open source incident {{ source.incident_id }}">[{{ loop.index }}]</button>{% endfor %}</li>{% endfor %}</ol>{% else %}<p>No fix steps were returned.</p>{% endif %}
+    </div>
+    <div class="memory-strip"><h3>Memories used: {{ result.memories|length }}</h3>
+      {% if result.memory_sources %}<ul>{% for source in result.memory_sources %}<li><a href="{{ url_for('incident_page', incident_id=source.incident_id) }}">Incident #{{ source.incident_id }} · {{ source.title }}</a> <span>{{ source.method }}</span></li>{% endfor %}</ul>{% else %}<p>No source-linked memories were available at this checkpoint.</p>{% endif %}
+      {% if result.other_memories %}<details><summary>Other recalled items (not relevant)</summary><ul class="memory-list">{% for memory in result.other_memories %}<li><blockquote>{{ memory }}</blockquote></li>{% endfor %}</ul></details>{% endif %}
+    </div>
+  </article>
+  {% endfor %}
+</section>
+<p class="replay-summary">{{ summary }}</p>
+{% endif %}
+{% endif %}
+{% endblock %}

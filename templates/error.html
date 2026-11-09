@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block title %}{{ title }}{% endblock %}
+{% block content %}
+<section class="card content-card error-page-card">
+  <img src="{{ url_for('static', filename='logo-mark.svg') }}" alt="" width="48" height="48">
+  <p class="eyebrow">Incident Memory</p>
+  <header class="page-header">
+    <div>
+      <h1>{{ title }}</h1>
+      <p class="page-description">{{ description or "That page is not available. Return to your workspace to continue." }}</p>
+    </div>
+    <a class="button primary" href="{{ url_for('home') }}">Go to home</a>
+    {% if title == "Page not found" %}
+    <a class="button secondary" href="{{ url_for('overview') }}">Go to overview</a>
+    {% endif %}
+  </header>
+</section>
+{% endblock %}

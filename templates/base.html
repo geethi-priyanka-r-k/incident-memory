@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Incident memory{% endblock %} | Incident Memory</title>
+  <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='favicon.svg') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <script src="{{ url_for('static', filename='app.js') }}" defer></script>
+</head>
+<body>
+  <a class="skip-link" href="#main-content">Skip to content</a>
+  <aside class="sidebar">
+    <a class="brand" href="{{ url_for('overview') }}" aria-label="Incident Memory overview">
+      <img src="{{ url_for('static', filename='logo-dark.svg') }}" alt="Incident Memory">
+    </a>
+    <nav aria-label="Main navigation">
+      <section class="nav-group" aria-labelledby="nav-work">
+        <h2 class="nav-heading" id="nav-work">Work</h2>
+        <div class="group-links">
+          <a class="nav-link {% if active_page == 'overview' %}active{% endif %}" href="{{ url_for('overview') }}">Home</a>
+          <a class="nav-link {% if active_page == 'incidents' %}active{% endif %}" href="{{ url_for('dashboard') }}">All incidents</a>
+          <a class="nav-link {% if active_page == 'report' %}active{% endif %}" href="{{ url_for('report_page') }}">Report a problem</a>
+        </div>
+      </section>
+      <section class="nav-group" aria-labelledby="nav-insights">
+        <h2 class="nav-heading" id="nav-insights">Insights</h2>
+        <div class="group-links">
+          <a class="nav-link {% if active_page == 'compare' %}active{% endif %}" href="{{ url_for('compare_page') }}">With vs without memory</a>
+          <a class="nav-link {% if active_page == 'memory' %}active{% endif %}" href="{{ url_for('memory_page') }}">Learning progress</a>
+          <a class="nav-link {% if active_page == 'patterns' %}active{% endif %}" href="{{ url_for('patterns_page') }}">Recurring problems</a>
+          <a class="nav-link {% if active_page == 'handoff' %}active{% endif %}" href="{{ url_for('handoff_page') }}">Shift handoff</a>
+          <a class="nav-link {% if active_page == 'outcomes' %}active{% endif %}" href="{{ url_for('outcomes_page') }}">Outcome learning</a>
+          <a class="nav-link {% if active_page == 'trail' %}active{% endif %}" href="{{ url_for('memory_trail_page') }}">Memory trail</a>
+          <a class="nav-link {% if active_page == 'replay' %}active{% endif %}" href="{{ url_for('replay_page') }}">Memory over time</a>
+          <a class="nav-link {% if active_page == 'risk' %}active{% endif %}" href="{{ url_for('risk_page') }}">Before you deploy</a>
+        </div>
+      </section>
+      <section class="nav-group" aria-labelledby="nav-integrations">
+        <h2 class="nav-heading" id="nav-integrations">Integrations</h2>
+        <div class="group-links">
+          <a class="nav-link {% if active_page == 'connect' %}active{% endif %}" href="{{ url_for('connect_page') }}">Band chat</a>
+        </div>
+      </section>
+    </nav>
+    {% if current_user %}
+    <div class="sidebar-account">
+      <span class="sidebar-user">{{ current_user.name }}{% if current_user.is_demo %} · Demo{% endif %}</span>
+      <button class="presenter-toggle" id="presenter-toggle" title="Presenter demo mode">Presenter</button>
+      <form method="post" action="{{ url_for('logout') }}">
+        <button class="text-button" type="submit">Sign out</button>
+      </form>
+    </div>
+    {% endif %}
+  </aside>
+  <main class="main" id="main-content" tabindex="-1">
+    {% if current_user and breadcrumbs %}
+    <ol class="breadcrumbs" aria-label="Breadcrumb">
+      {% for crumb in breadcrumbs %}
+      <li>{% if not loop.last %}<a href="{{ crumb.url }}">{{ crumb.label }}</a><span class="crumb-sep">/</span>{% else %}<span class="crumb-current">{{ crumb.label }}</span>{% endif %}</li>
+      {% endfor %}
+    </ol>
+    {% endif %}
+    {% block content %}{% endblock %}
+  </main>
+  <div id="toast-container"></div>
+  {% include "_memory_drawer.html" %}
+  <aside class="presenter-banner" id="presenter-banner" hidden>
+    <span><strong>Presenter mode</strong> · 60-second demo script</span>
+    <button class="button secondary" type="button" id="presenter-close">Close</button>
+  </aside>
+</body>
+</html>

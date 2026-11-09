@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}Memory trail{% endblock %}
+{% block content %}
+<header class="page-header">
+  <div>
+    <h1>Memory trail</h1>
+    <p class="page-description">See which past incidents each part of an answer came from.</p>
+  </div>
+</header>
+<section class="card content-card">
+  {% if incidents %}
+  <ol class="memory-trail-list">
+    {% for incident in incidents %}
+    <li>
+      <span class="trail-node" aria-hidden="true"></span>
+      <article>
+        <header><a href="{{ url_for('incident_page', incident_id=incident.id) }}">Incident #{{ incident.id }} · {{ incident.title }}</a><span class="memory-sync-label">Memory: {{ incident.memory_sync|capitalize }}</span></header>
+        <p>{{ incident.report }}</p>
+        <dl><div><dt>Root cause</dt><dd>{{ incident.root_cause or "Not recorded" }}</dd></div><div><dt>Fix</dt><dd>{{ incident.fix or "Not recorded" }}</dd></div><div><dt>What did not work</dt><dd>{{ incident.not_worked or "Not recorded" }}</dd></div></dl>
+        <time datetime="{{ incident.resolved_at }}">{{ incident.resolved_at[:10] if incident.resolved_at else "Date not recorded" }}</time>
+      </article>
+    </li>
+    {% endfor %}
+  </ol>
+  {% else %}
+  <div class="empty-state">
+    <p>No resolved incidents are recorded yet. Resolve an incident to begin a memory trail.</p>
+    <a class="button primary" href="{{ url_for('dashboard') }}">View incidents</a>
+  </div>
+  {% endif %}
+</section>
+{% endblock %}

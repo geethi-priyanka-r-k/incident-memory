@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#08302F">
+  <title>Incident Memory · Learn from every incident</title>
+  <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='favicon.svg') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body class="public-page">
+  <header class="public-nav">
+    <a class="public-logo" href="{{ url_for('home') }}" aria-label="Incident Memory home">
+      <img src="{{ url_for('static', filename='logo-dark.svg') }}" alt="Incident Memory">
+    </a>
+    <nav aria-label="Main navigation">
+      <a href="#product">Product</a>
+      <a href="#how-it-works">How it works</a>
+      <a href="#different">What is different</a>
+    </nav>
+    <div class="public-nav-actions">
+      <a class="button outlined-cream" href="{{ url_for('login') }}">Sign in</a>
+      <a class="button primary" href="{{ url_for('signup') }}">Get started</a>
+    </div>
+  </header>
+
+  <main>
+    <section class="public-hero" id="product">
+      <div class="public-hero-copy">
+        <p class="public-eyebrow">Incident response with a memory</p>
+        <h1 class="public-wordmark"><span>INCIDENT</span><span>MEMORY</span></h1>
+        <p class="public-hero-description">Give your team the fixes, failed attempts, and context from the last time this happened.</p>
+        <div class="public-hero-actions">
+          <a class="button primary" href="{{ url_for('signup') }}">Get started</a>
+          <a class="button outlined-cream" href="#how-it-works">See how it works</a>
+        </div>
+      </div>
+      <div class="product-preview" aria-label="Sample incident briefing preview">
+        <div class="preview-window-bar"><span></span><span></span><span></span><small>INCIDENT BRIEFING · SAMPLE</small></div>
+        <div class="preview-body">
+          <div class="preview-briefing">
+            <span class="preview-label">Sample · recalled context</span>
+            <strong>Seen before: 3 similar incidents</strong>
+            <div class="preview-confidence-heading"><span>Match confidence</span><b>87%</b></div>
+            <div class="preview-confidence-track"><span></span></div>
+            <p class="preview-fix"><b>Suggested fix</b><br>Raise session TTL and enable sticky sessions.</p>
+          </div>
+          <div class="preview-danger">
+            <strong>Don't try these</strong>
+            <p>Restarting the web workers did not stop the session drops.</p>
+          </div>
+          <blockquote class="preview-quote">“The session expired during failover; sticky sessions stabilized sign-ins.”<cite>Recalled resolution · Sample</cite></blockquote>
+        </div>
+      </div>
+    </section>
+
+    {% if summary.incidents_remembered > 0 or summary.fixes_retained > 0 or summary.incident_types_covered > 0 %}
+    <section class="public-counters" aria-label="Workspace records">
+      {% if summary.incidents_remembered > 0 %}<div><strong>{{ summary.incidents_remembered }}</strong><span>Incidents recorded</span></div>{% endif %}
+      {% if summary.fixes_retained > 0 %}<div><strong>{{ summary.fixes_retained }}</strong><span>Fixes retained</span></div>{% endif %}
+      {% if summary.incident_types_covered > 0 %}<div><strong>{{ summary.incident_types_covered }}</strong><span>Incident types with retained fixes</span></div>{% endif %}
+    </section>
+    {% endif %}
+
+    <section class="public-problem section-shell">
+      <div class="section-title-block">
+        <p class="public-eyebrow">The problem</p>
+        <h2>Every outage feels new when the fix lives in someone's head.</h2>
+      </div>
+      <div class="problem-copy">
+        <p>During an outage, the team searches chat, tickets, and old notes while customers wait. The person who solved the last one may be offline.</p>
+        <p>Incident Memory keeps the report, verified fix, and what failed together—then brings related resolutions back when a similar problem returns.</p>
+      </div>
+    </section>
+
+    <section class="public-how section-shell" id="how-it-works">
+      <div class="section-title-block">
+        <p class="public-eyebrow">A useful loop</p>
+        <h2>How it works</h2>
+      </div>
+      <ol class="public-steps">
+        <li><span>01</span><h3>Report from anywhere</h3><p>Capture the symptoms from the web, monitoring, support, or Band.</p></li>
+        <li><span>02</span><h3>Agent recalls similar incidents</h3><p>Bring back related fixes and the approaches that did not work.</p></li>
+        <li><span>03</span><h3>Team resolves it</h3><p>Use the briefing as context while people investigate and decide.</p></li>
+        <li><span>04</span><h3>The fix is remembered</h3><p>Save the verified resolution for the next report.</p></li>
+      </ol>
+    </section>
+
+    <section class="public-different section-shell" id="different">
+      <div class="section-title-block">
+        <p class="public-eyebrow">What is different</p>
+        <h2>Memory built around the work of resolving incidents.</h2>
+      </div>
+      <div class="feature-row">
+        <div class="feature-mock outcome-mock" aria-hidden="true"><span>RESOLUTION SAVED</span><b>Root cause</b><i>Connection pool exhausted under peak traffic.</i><b>Fix that worked</b><i>Raised the pool limit and added saturation alerts.</i></div>
+        <div class="feature-copy"><p class="public-eyebrow">01 · Outcome learning</p><h3>Keep what actually fixed it.</h3><p>Resolutions enter memory after the team records the cause, fix, and failed attempts.</p></div>
+      </div>
+      <div class="feature-row feature-row-reverse">
+        <div class="feature-mock trail-mock" aria-hidden="true"><span>INCIDENT MEMORY TRAIL</span><b>Report received</b><i>09:14 · Checkout API latency</i><b>Related fix recalled</b><i>09:15 · Connection pool relief</i><b>Resolution retained</b><i>09:42 · Verified by on-call</i></div>
+        <div class="feature-copy"><p class="public-eyebrow">02 · Memory trail</p><h3>See where the context came from.</h3><p>Briefings show recalled incident memories so responders can inspect the evidence, not just a conclusion.</p></div>
+      </div>
+      <div class="feature-row">
+        <div class="feature-mock replay-mock" aria-hidden="true"><span>MEMORY REPLAY</span><div><b>Without memory</b><small>Start diagnosis from the report alone.</small></div><div><b>With memory</b><small>Compare the report with a related past resolution.</small></div></div>
+        <div class="feature-copy"><p class="public-eyebrow">03 · Memory replay</p><h3>Compare the same problem with and without context.</h3><p>Run a side-by-side triage to see which recalled memories changed the briefing.</p></div>
+      </div>
+      <div class="feature-row feature-row-reverse">
+        <div class="feature-mock risk-mock" aria-hidden="true"><span>CHANGE RISK CHECK</span><b>Proposed change</b><i>Increase session lifetime during failover.</i><hr><b>Related history</b><i>Previous rollout caused sticky-session conflicts.</i></div>
+        <div class="feature-copy"><p class="public-eyebrow">04 · Change risk check</p><h3>Surface relevant history before a change.</h3><p>Check prior incidents and known failure modes as supporting context for a planned operational change.</p></div>
+      </div>
+    </section>
+
+    <section class="public-channels section-shell">
+      <div class="section-title-block">
+        <p class="public-eyebrow">Fits your workflow</p>
+        <h2>Works where your team works.</h2>
+      </div>
+      <div class="channel-list"><span>Band chat rooms</span><span>Web form</span><span>API for monitoring alerts</span></div>
+    </section>
+
+    <section class="public-final-cta">
+      <div><p class="public-eyebrow">Keep the next response moving</p><h2>Start with the incidents your team already knows.</h2></div>
+      <a class="button primary" href="{{ url_for('signup') }}">Get started</a>
+    </section>
+  </main>
+
+  <footer class="public-footer">
+    <a class="public-logo" href="{{ url_for('home') }}"><img src="{{ url_for('static', filename='logo-dark.svg') }}" alt="Incident Memory"></a>
+    <span>Incident records, recalled with context.</span>
+    <div><a href="{{ url_for('login') }}">Sign in</a><a href="{{ url_for('signup') }}">Create an account</a></div>
+  </footer>
+</body>
+</html>

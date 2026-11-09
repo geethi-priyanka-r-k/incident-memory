@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+{% block title %}Band chat{% endblock %}
+{% block content %}
+<header class="page-header">
+  <div>
+    <h1>Band chat</h1>
+    <p class="page-description">Check the Band bridge connection and learn the room commands for reporting and resolving incidents.</p>
+  </div>
+</header>
+
+<section class="card content-card">
+  <div class="section-heading">
+    <h2>Bridge configuration</h2>
+    <span class="badge {% if bridge_configured %}badge-resolved{% else %}badge-open{% endif %}">
+      {% if bridge_configured %}Bridge configured{% else %}Setup needed{% endif %}
+    </span>
+  </div>
+  <p class="section-description">This only checks whether each variable is set. It never displays its value.</p>
+  <ul class="configuration-list">
+    {% for name, present in configured.items() %}
+    <li><code>{{ name }}</code><span>{{ "Present" if present else "Missing" }}</span></li>
+    {% endfor %}
+  </ul>
+  {% if not bridge_configured %}
+  <p class="muted">Set the missing values in PowerShell, then restart <code>band_bridge.py</code>.</p>
+  {% endif %}
+</section>
+
+<section class="card content-card bridge-status-card">
+  <div class="section-heading">
+    <div><h2>Bridge connection</h2><p class="section-description">Status is based on the bridge's recent SQLite heartbeat.</p></div>
+    <span class="badge {% if bridge_online %}badge-resolved{% else %}badge-open{% endif %}">
+      <span class="status-indicator" aria-hidden="true"></span>
+      {% if bridge_online %}Online{% else %}Offline{% endif %}
+    </span>
+  </div>
+  {% if bridge_heartbeat %}
+  <p class="muted">Last heartbeat: <time datetime="{{ bridge_heartbeat.last_seen }}">{{ bridge_heartbeat.last_seen[:19]|replace("T", " ") }}</time></p>
+  {% else %}
+  <p class="muted">No heartbeat has been recorded. Start <code>band_bridge.py</code> to report its status here.</p>
+  {% endif %}
+</section>
+
+<section class="card content-card">
+  <h2>Room commands</h2>
+  <p>Mention the agent using the room’s @ dropdown, then describe the incident:</p>
+  <pre class="code-block">@geetyravi07/incident-memory-agent Checkout requests are timing out in production.</pre>
+  <p>To record a resolution, include every field:</p>
+  <pre class="code-block">@geetyravi07/incident-memory-agent resolve #12 root cause: exhausted database connections fix: increase the pool limit not worked: restart the service</pre>
+  <p class="muted">Use <code>not worked: none</code> if no attempted fix failed.</p>
+</section>
+
+<section class="card content-card">
+  <h2>Report through the local API</h2>
+  <p>With the Flask app running, this PowerShell example creates an incident and returns its ID and page URL:</p>
+  <pre class="code-block">$body = @{
+  title = "Checkout requests are timing out"
+  report = "Requests queue until they time out during checkout."
+  where_seen = "Production checkout service"
+  source = "monitoring"
+  reported_by = "On-call engineer"
+} | ConvertTo-Json
+
+$headers = @{
+  "X-Report-Token" = $env:REPORT_API_TOKEN
+}
+
+Invoke-RestMethod `
+  -Uri "http://127.0.0.1:5000/api/report" `
+  -Method Post `
+  -ContentType "application/json" `
+  -Headers $headers `
+  -Body $body</pre>
+  <p class="muted">Set <code>REPORT_API_TOKEN</code> in your PowerShell session to the same value configured for the app. This example does not print it.</p>
+</section>
+{% endblock %}

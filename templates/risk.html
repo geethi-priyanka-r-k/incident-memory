@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}Before you deploy{% endblock %}
+{% block content %}
+<header class="page-header">
+  <div>
+    <h1>Before you deploy</h1>
+    <p class="page-description">Paste a planned change to see related past incidents and risk evidence before deploying.</p>
+  </div>
+</header>
+<section class="card content-card risk-form-card">
+  <form method="post" action="{{ url_for('risk_page') }}">
+    <label for="change-description">Describe the change you are about to make</label>
+    <textarea id="change-description" name="change" rows="4" maxlength="10000" required>{{ change }}</textarea>
+    <button class="button primary" type="submit">Check incident history</button>
+  </form>
+</section>
+{% if error %}<p class="form-error" role="alert">{{ error }}</p>{% endif %}
+{% if result %}
+<section class="card content-card risk-result">
+  <div class="risk-heading"><div><p class="eyebrow">Historical assessment</p><h2>Risk: {{ result.risk_level }}</h2></div><span class="confidence-caption">Model-estimated from recalled evidence</span></div>
+  {% if not sources %}
+  <p>No history for this kind of change, risk unknown.</p>
+  {% else %}
+    <section><h3>Reasons</h3>
+      {% if result.reasons %}<ul class="risk-evidence-list">{% for item in result.reasons %}<li>{{ item.text }}{% for source in item.sources %}<a class="citation-marker" href="{{ url_for('incident_page', incident_id=source.incident_id) }}">Incident #{{ source.incident_id }}</a>{% endfor %}</li>{% endfor %}</ul>{% else %}<p>The recalled records did not support a specific risk conclusion.</p>{% endif %}
+    </section>
+    <section><h3>What failed before</h3>
+      {% if result.what_failed_before %}<ul class="risk-evidence-list">{% for item in result.what_failed_before %}<li>{{ item.text }}{% for source in item.sources %}<a class="citation-marker" href="{{ url_for('incident_page', incident_id=source.incident_id) }}">Incident #{{ source.incident_id }}</a>{% endfor %}</li>{% endfor %}</ul>{% else %}<p>No failed approach was documented in the returned memories.</p>{% endif %}
+    </section>
+    <section><h3>Rollback note from history</h3><p>{{ result.rollback_note }}</p></section>
+    <section class="risk-sources"><h3>Recalled records</h3><ul>{% for source in sources %}<li><a href="{{ url_for('incident_page', incident_id=source.incident_id) }}">Incident #{{ source.incident_id }} · {{ source.title }}</a>{% if source.method == "matched by similarity" %}<small>Matched by similarity</small>{% endif %}</li>{% endfor %}</ul></section>
+  {% endif %}
+</section>
+{% endif %}
+{% endblock %}
